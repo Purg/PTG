@@ -12,6 +12,7 @@ from torchvision.ops import nms
 from angel_msgs.msg import ObjectDetection2dSet
 from angel_system.fasterrcnn.faster_rcnn.resnet import resnet
 from angel_system.fasterrcnn.processing_utils import _get_image_blob
+from angel_utils import RateTracker
 from angel_utils.conversion import time_to_int
 
 
@@ -95,7 +96,9 @@ class ObjectDetectorWithDescriptors(Node):
         )
         # minimum time in nanoseconds (see `time_to_int`)
         self._min_time_lock = Lock()
-        self._min_time: int = 0
+        self._min_time: int = -1
+
+        self._detection_rate_tracker = RateTracker()
 
         # Load class labels
         self.classes = ['__background__']
@@ -168,7 +171,7 @@ class ObjectDetectorWithDescriptors(Node):
                      f"{min_time} ns")
             return
 
-        log.info(f"Starting detection for frame time {img_time_ns} ns")
+        log.debug(f"Starting detection for frame time {img_time_ns} ns")
 
         # Preprocess image - NOTE: bgr order required by _get_image_blob
         im_in = np.array(BRIDGE.imgmsg_to_cv2(image, desired_encoding="bgr8"))
@@ -218,7 +221,11 @@ class ObjectDetectorWithDescriptors(Node):
 
         # Publish detection set message
         self._publisher.publish(msg)
-        log.info("Published detection set message")
+
+        self._detection_rate_tracker.tick()
+        log.info(f"Published detection message (hz: "
+                 f"{self._detection_rate_tracker.get_rate_avg()})",
+                 throttle_duration_sec=1)
 
     def preprocess_image(self, im_in):
         """
