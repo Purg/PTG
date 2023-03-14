@@ -21,6 +21,8 @@ setup(
     entry_points={
             'console_scripts': [
                 'video_listener = angel_system_nodes.video_subscriber:main',
+                'asr = angel_system_nodes.asr:main',
+                'intent_detector = angel_system_nodes.intent_detector:main',
                 'audio_player = angel_system_nodes.audio_player:main',
                 'frame_publisher = angel_system_nodes.ros_publisher:main',
                 'generate_images = angel_system_nodes.generate_images:main',
@@ -41,3 +43,4 @@ setup(
             ],
     },
 )
+1
