@@ -1,3 +1,5 @@
+import time
+
 from builtin_interfaces.msg import Time
 from cv_bridge import CvBridge
 import numpy as np
@@ -19,6 +21,8 @@ from angel_system.fasterrcnn.rpn.bbox_transform import clip_boxes
 from angel_system.fasterrcnn.rpn.bbox_transform import bbox_transform_inv
 from angel_utils.conversion import time_to_int
 import cv2
+
+from angel_utils import RateTracker
 
 
 BRIDGE = CvBridge()
@@ -103,6 +107,8 @@ class ObjectDetectorWithDescriptors_v3(Node):
         self._min_time_lock = Lock()
         self._min_time: int = 0
 
+        self._detection_rate_tracker = RateTracker()
+
         # Load class labels
         classes = ['__background__']
         with open(self._object_vocabulary) as f:
@@ -182,6 +188,7 @@ class ObjectDetectorWithDescriptors_v3(Node):
 
         # Preprocess image - NOTE: bgr order required by _get_image_blob
         im_in = np.array(BRIDGE.imgmsg_to_cv2(image, desired_encoding="bgr8"))
+
         im_data, im_info, gt_boxes, num_boxes, im_scales = self.preprocess_image(im_in)
 
         # Send to model
@@ -229,13 +236,13 @@ class ObjectDetectorWithDescriptors_v3(Node):
 
         # Publish detection set message
         self._publisher.publish(msg)
-        if self.counter >= 30:
-            self.counter = 0
-            log.info("published 30 messages")
-        else:
-            self.counter += 1
-        #log.info("Published detection set message")
+
         self.first = False
+
+        self._detection_rate_tracker.tick()
+        log.info(f"Published detection message (hz: "
+                 f"{self._detection_rate_tracker.get_rate_avg()})",
+                 throttle_duration_sec=1)
 
     def preprocess_image(self, im_in):
         """

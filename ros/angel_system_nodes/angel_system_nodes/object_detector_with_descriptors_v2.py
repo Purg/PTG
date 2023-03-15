@@ -101,12 +101,13 @@ class ObjectDetectorWithDescriptors_v2(Node):
         self._min_time_lock = Lock()
         self._min_time: int = 0
 
+        self._detection_rate_tracker = RateTracker()
+
         # Load class labels
         self.classes = ['__background__']
         with open(self._object_vocabulary) as f:
             for obj in f.readlines():
                 self.classes.append(obj.split(',')[0].lower().strip())
-        self._detection_rate_tracker = RateTracker()
 
         log.info("Ready to detect")
 
@@ -176,7 +177,7 @@ class ObjectDetectorWithDescriptors_v2(Node):
                      f"{min_time} ns")
             return
 
-        log.info(f"Starting detection for frame time {img_time_ns} ns")
+        log.debug(f"Starting detection for frame time {img_time_ns} ns")
 
         # Preprocess image - NOTE: bgr order required by _get_image_blob
         im_in = np.array(BRIDGE.imgmsg_to_cv2(image, desired_encoding="bgr8"))
@@ -227,11 +228,11 @@ class ObjectDetectorWithDescriptors_v2(Node):
 
         # Publish detection set message
         self._publisher.publish(msg)
+
         self._detection_rate_tracker.tick()
-        self.get_logger().debug(f"Published audio message (hz: "
-                                f"{self._detection_rate_tracker.get_rate_avg()})",
-                                throttle_duration_sec=1)
-        log.info("Published detection set message")
+        log.info(f"Published detection message (hz: "
+                 f"{self._detection_rate_tracker.get_rate_avg()})",
+                 throttle_duration_sec=1)
 
     def preprocess_image(self, im_in):
         """
