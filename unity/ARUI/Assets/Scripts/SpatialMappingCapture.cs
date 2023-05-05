@@ -285,7 +285,7 @@ public class SpatialMappingCapture : MonoBehaviour, IMixedRealitySpatialAwarenes
         MeshMsg shapeMsg = new MeshMsg(meshTriangles.ToArray(), meshPoints.ToArray());
 
         // Build and publish the spatial mesh message
-        SpatialMeshMsg meshMsg = new SpatialMeshMsg(id, false, shapeMsg);
+        SpatialMeshMsg meshMsg = new SpatialMeshMsg(id.ToString(), false, shapeMsg);
         ros.Publish(spatialMapTopicName, meshMsg);
     }
 
