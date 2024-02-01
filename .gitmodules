@@ -1,6 +1,3 @@
-[submodule "ros/ROS-TCP-Endpoint"]
-	path = ros/ROS-TCP-Endpoint
-	url = https://github.com/Unity-Technologies/ROS-TCP-Endpoint.git
 [submodule "hl2ss"]
 	path = hl2ss
 	url = https://github.com/VIDA-NYU/hl2ss.git
@@ -11,3 +8,6 @@
 [submodule "python-tpl/yolov7"]
 	path = python-tpl/yolov7
 	url = https://github.com/cameron-a-johnson/yolov7.git
+[submodule "ros_workspaces/ws_common/ROS-TCP-Endpoint"]
+	path = ros_workspaces/ws_common/ROS-TCP-Endpoint
+	url = https://github.com/Unity-Technologies/ROS-TCP-Endpoint.git

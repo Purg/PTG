@@ -58,7 +58,7 @@ ament_target_dependencies( bbn_integration
   libzmq
   )
 #ament_export_targets( bbn_integration_targets HAS_LIBRARY_TARGET )
-install( DIRECTORY include/
+install( DIRECTORY include
   DESTINATION include
   )
 install( TARGETS bbn_integration

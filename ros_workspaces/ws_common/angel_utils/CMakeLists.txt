@@ -53,7 +53,7 @@ ament_export_targets( angel_utils_targets HAS_LIBRARY_TARGET )
 # ament_export_dependencies( )
 
 # Install Things
-install( DIRECTORY include/
+install( DIRECTORY include
   DESTINATION include
   )
 install( TARGETS angel_utils

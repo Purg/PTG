@@ -33,7 +33,7 @@ def make_default_main(
     implementation and reference to be expanded upon for advanced use-cases.
 
     This function can be imported into your top-level
-        >>> from angel_utils.node_config import make_default_main
+        >>> from angel_utils import make_default_main
         >>> main = make_default_main()
 
     :param node_type: The class type, or sequence of class types, of the Node
