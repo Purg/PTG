@@ -44,3 +44,45 @@ function get_docker_compose_cmd()
   fi
   eval "${EVAL_STR}"
 }
+
+# Generate an XAUTH file to transfer usage authority into another context, i.e.
+# the docker container space.
+#
+# This function expects one positional argument that is the directory to
+# [optionally] a file into. If this directory does not exist, we will emit a
+# warning message and return with error code 1
+#
+# If there is no $DISPLAY, no file is generated and a warning message is
+# emitted stderr. We will return with error code 2.
+#
+# If neither of the two above error conditions are met, we will export the
+# variable XAUTH_FILEPATH that stores the string filepath written to. This
+# filepath will only be an extension of the given input directory, i.e. we will
+# no change the absolute or relative nature of the input directory path.
+#
+# It is the responsibility of the caller to clean up the file generated.
+#
+function generate_local_xauth_file()
+{
+  # if there is no local $DISPLAY value, nothing to generate
+  if [[ -n "${DISPLAY}" ]]
+  then
+    out_dir="$1"
+    if [ ! -d "${out_dir}" ]
+    then
+      log "[warning] Output directory does not exist: ${out_dir}"
+      return 1
+    fi
+    # Exporting to be used in replacement in docker-compose file.
+    XAUTH_FILEPATH="$(mktemp "${out_dir}/local-XXXXXX.xauth")"
+    export XAUTH_FILEPATH
+    log "[INFO] Creating local xauth file: $XAUTH_FILEPATH"
+    touch "$XAUTH_FILEPATH"
+    xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH_FILEPATH" nmerge -
+  else
+    log "[WARNING] No DISPLAY variable, nothing to authenticate as there is no"
+    log "          capability to display."
+    return 2
+  fi
+  return 0
+}

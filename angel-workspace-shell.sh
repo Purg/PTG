@@ -74,12 +74,8 @@ SERVICE_NAME="${ARG_SERVICE_NAME:-${DEFAULT_SERVICE_NAME}}"
 # Create a permissions file for xauthority.
 XAUTH_DIR="${SCRIPT_DIR}/.container_xauth"
 mkdir -p "${XAUTH_DIR}"
-# Exporting to be used in replacement in docker-compose file.
-XAUTH_FILEPATH="$(mktemp "${XAUTH_DIR}/local-XXXXXX.xauth")"
-export XAUTH_FILEPATH
-log "[INFO] Creating local xauth file: $XAUTH_FILEPATH"
-touch "$XAUTH_FILEPATH"
-xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH_FILEPATH" nmerge -
+generate_local_xauth_file "${XAUTH_DIR}"
+# XAUTH_FILEPATH should now exist to be utilized.
 
 # Conditionally gather if jupyter is available in the current
 # environment and parameterize mounting it's runtime dir
@@ -117,7 +113,7 @@ DC_RUN_RET_CODE="$?"
 set -e
 log "[INFO] Container run exited with code: $DC_RUN_RET_CODE"
 
-log "[INFO] Removing local xauth file."
+log "[INFO] Removing local xauth file: ${XAUTH_FILEPATH}"
 rm "${XAUTH_FILEPATH}"
 
 exit "$DC_RUN_RET_CODE"
