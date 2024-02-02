@@ -13,4 +13,4 @@ then
   rosdep update
 fi
 
-rosdep install -i --from-path "${ANGEL_WORKSPACE_DIR}" --rosdistro "${ROS_DISTRO}" -y
+rosdep install -i --from-path "${ANGEL_WORKSPACE_DIR}"/ros_workspaces --rosdistro "${ROS_DISTRO}" -y

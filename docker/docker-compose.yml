@@ -6,33 +6,14 @@ services:
   # Build requirements
   #
 
-  workspace-base-dev:
-    image: ${PTG_REGISTRY}/workspace-base-dev:${PTG_TAG}
+  workspace-env-common:
+    image: ${PTG_REGISTRY}/workspace-env-common:${PTG_TAG}
     build:
       context: ..  # repo root
-      dockerfile: docker/workspace-base-dev/Dockerfile
+      dockerfile: docker/workspace-env-common/Dockerfile
       args:
-        ROS_VERSION:  # from .env file
-      cache_from:
-        # In order of descending precedence
-        - ${PTG_REGISTRY}/workspace-base-dev:${PTG_TAG}
-        - ${PTG_REGISTRY}/workspace-base-dev:latest
-    profiles:
-      - build-only
-
-
-  workspace-build-dev:
-    image: ${PTG_REGISTRY}/workspace-build-dev:${PTG_TAG}
-    depends_on:
-      - workspace-base-dev
-    build:
-      context: ..  # repo root
-      dockerfile: docker/workspace-build/Dockerfile
-      args:
-        BASE_IMAGE: workspace-base-dev
         ANGEL_WORKSPACE_DIR:  # from .env file
-        PTG_REGISTRY:  # from .env file
-        PTG_TAG:  # from .env file
+        ROS_VERSION:  # from .env file
       cache_from:
         # In order of descending precedence
         - ${PTG_REGISTRY}/workspace-build-dev:${PTG_TAG}
@@ -47,7 +28,7 @@ services:
   workspace-shell-dev:
     # Development workspace shell, including source and build mounting.
     # Includes X11 passthrough. Requires XAUTH_FILEPATH to be defined in env.
-    image: ${PTG_REGISTRY}/workspace-build-dev:${PTG_TAG}
+    image: ${PTG_REGISTRY}/workspace-env-common:${PTG_TAG}
     privileged: true
     network_mode: host
     tty: true
@@ -56,7 +37,7 @@ services:
       # Host sharing
       - ../poetry.lock:${ANGEL_WORKSPACE_DIR}/poetry.lock
       - ../pyproject.toml:${ANGEL_WORKSPACE_DIR}/pyproject.toml
-      - ../ros:${ANGEL_WORKSPACE_DIR}/ros
+      - ../ros_workspaces/ws_common:${ANGEL_WORKSPACE_DIR}/ros_workspaces/ws_common
       - ../tmux:${ANGEL_WORKSPACE_DIR}/tmux
       - ../angel_system:${ANGEL_WORKSPACE_DIR}/angel_system
       - ../model_files:${ANGEL_WORKSPACE_DIR}/model_files
@@ -114,17 +95,3 @@ services:
               driver: nvidia
               count: all
               # device_ids: ['0', '3']  # mutually exclusive with count
-
-  workspace-shell-run:
-    # Service for running ros2 commands in the context of the image's build
-    # workspace.
-    image: ${PTG_REGISTRY}/workspace-build-dev:${PTG_TAG}
-    privileged: true
-    network_mode: host
-    volumes:
-      - /dev/shm:/dev/shm
-    environment:
-      ROS_AUTOMATIC_DISCOVERY_RANGE:  # from .env file or parent environment
-      RMW_IMPLEMENTATION:  # from .env file or parent environment
-      CYCLONE_DDS_INTERFACE:  # from .env file or parent environment
-      SETUP_WORKSPACE_INSTALL: 1  # yes, activate the workspace here

@@ -4,10 +4,8 @@
 # Assumptions:
 # - ROS_DISTRO is defined with the name of a distribution installed under /opt/ros/
 #
-ARG PTG_REGISTRY
-ARG BASE_IMAGE
-ARG PTG_TAG
-FROM ${PTG_REGISTRY}/${BASE_IMAGE}:${PTG_TAG} AS base
+ARG ROS_VERSION
+FROM osrf/ros:${ROS_VERSION}-desktop AS base
 
 SHELL ["/bin/bash", "-c"]
 
@@ -16,9 +14,17 @@ ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
 
 # Basic system package installations
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update \
+ && apt-get -y dist-upgrade \
  && apt-get -y install \
+        bash-completion \
+        gdb \
         gettext-base \
+        htop \
+        iproute2 \
+        less \
+        parallel \
         python3-pip \
         python3-venv \
         ros-${ROS_DISTRO}-image-transport-plugins \
@@ -28,6 +34,8 @@ RUN apt-get -y update \
         # for demo-ui
         ros-${ROS_DISTRO}-rosbridge-server \
         tmuxinator \
+        tmux \
+        vim \
         # for python simpleaudio
         libasound2-dev \
         # for opengl use with trimesh
@@ -39,6 +47,10 @@ RUN apt-get -y update \
         libx11-6 \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
+
+# Activate some bash completion
+RUN echo "source /etc/bash_completion" >> ~/.bashrc \
+ && echo "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" >> ~/.bashrc
 
 # Env vars for the nvidia-container-runtime.
 ENV NVIDIA_VISIBLE_DEVICES all
@@ -71,11 +83,11 @@ ENV ANGEL_WORKSPACE_DIR="${ANGEL_WORKSPACE_DIR}"
 # Isolate package.xml files for rosdep dependency installation.
 #
 FROM base AS tmp_package_files
-COPY ./ros "${ANGEL_WORKSPACE_DIR}"/ros
+COPY ./ros_workspaces/ws_common "${ANGEL_WORKSPACE_DIR}"/ros_workspaces/ws_common
 RUN mkdir "${ANGEL_WORKSPACE_DIR}"/tmp \
- && (find "${ANGEL_WORKSPACE_DIR}"/ros -type f -name 'package.xml' -print | xargs -n1 -I{} cp --parents {} "${ANGEL_WORKSPACE_DIR}"/tmp) \
- && rm -r "${ANGEL_WORKSPACE_DIR}"/ros \
- && mv "${ANGEL_WORKSPACE_DIR}"/tmp/"${ANGEL_WORKSPACE_DIR}"/ros "${ANGEL_WORKSPACE_DIR}"/ \
+ && (find "${ANGEL_WORKSPACE_DIR}"/ros_workspaces/ws_common -type f -name 'package.xml' -print | xargs -n1 -I{} cp --parents {} "${ANGEL_WORKSPACE_DIR}"/tmp) \
+ && rm -r "${ANGEL_WORKSPACE_DIR}"/ros_workspaces/ws_common \
+ && mv "${ANGEL_WORKSPACE_DIR}"/tmp/"${ANGEL_WORKSPACE_DIR}"/ros_workspaces "${ANGEL_WORKSPACE_DIR}"/ \
  && rm -r "${ANGEL_WORKSPACE_DIR}"/tmp
 
 #
@@ -115,18 +127,6 @@ RUN cd "${ANGEL_WORKSPACE_DIR}" \
  && mkdir "${ANGEL_WORKSPACE_DIR}"/angel_system \
  && touch "${ANGEL_WORKSPACE_DIR}"/angel_system/__init__.py \
  && pip install --no-deps -e .
-
-## TODO: Remove -- environment only container
-## Build the ROS workspace.
-#COPY ./ros "${ANGEL_WORKSPACE_DIR}/src"
-#COPY docker/workspace_build_ros.sh "${ANGEL_WORKSPACE_DIR}"/
-#RUN "${ANGEL_WORKSPACE_DIR}/workspace_build_ros.sh"
-#
-## TODO: Remove -- environment only container
-## Build the required NPM envirnment for the Engineering UI.
-#COPY docker/workspace_build_npm_install.sh "${ANGEL_WORKSPACE_DIR}"/
-#RUN cd "${ANGEL_WORKSPACE_DIR}"/src/angel_utils/demo_ui/ \
-# && "${ANGEL_WORKSPACE_DIR}/workspace_build_npm_install.sh"
 
 # Bring in tmux run configurations
 # - add symlink to tmuxinator's expected "config home"
